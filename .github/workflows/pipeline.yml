@@ -11,16 +11,46 @@ on:
 permissions:
   contents: write
 
-
 jobs:
 
-  # --------------------------------------------------
-  # JOB 1: Validate and Prepare Data
-  # --------------------------------------------------
+  # ==================================================
+  # JOB 1: REGISTER DATASET
+  # ==================================================
+
+  register-dataset:
+
+    name: Register Dataset
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Register Dataset
+        run: |
+          echo "Registering tourism dataset..."
+          test -f data/tourism.csv
+          echo "Dataset found successfully."
+          echo "Dataset registered for the pipeline."
+
+      - name: Upload registered dataset
+        uses: actions/upload-artifact@v4
+        with:
+          name: registered-dataset
+          path: data/tourism.csv
+
+
+  # ==================================================
+  # JOB 2: DATA PREPARATION
+  # ==================================================
 
   data-preparation:
 
     name: Data Preparation
+
+    needs: register-dataset
 
     runs-on: ubuntu-latest
 
@@ -38,6 +68,12 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Download registered dataset
+        uses: actions/download-artifact@v4
+        with:
+          name: registered-dataset
+          path: data/
+
       - name: Validate dataset
         run: |
           python validate_data.py
@@ -53,9 +89,9 @@ jobs:
           path: artifacts/
 
 
-  # --------------------------------------------------
-  # JOB 2: Model Training with MLflow
-  # --------------------------------------------------
+  # ==================================================
+  # JOB 3: MODEL TRAINING
+  # ==================================================
 
   model-training:
 
@@ -87,7 +123,7 @@ jobs:
 
       - name: Start MLflow tracking
         run: |
-          nohup mlflow ui --host 0.0.0.0 --port 5000 &
+          nohup mlflow ui --host 0.0.0.0 --port 5000 > mlflow.log 2>&1 &
           sleep 5
 
       - name: Train models
@@ -101,16 +137,11 @@ jobs:
 
       - name: Commit trained model
         run: |
-
           git config user.name "github-actions[bot]"
-
-          git config user.email \
-            "github-actions[bot]@users.noreply.github.com"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add deployment/best_model.joblib
 
-          git commit \
-            -m "Update trained tourism model [skip ci]" \
-            || echo "No changes to commit"
+          git commit -m "Update trained tourism model [skip ci]" || echo "No changes to commit"
 
           git push
