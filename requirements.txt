@@ -1,6 +1,15 @@
 
+# Install pandas for data loading and data processing.
 pandas==2.2.2
+
+# Install scikit-learn for preprocessing and machine learning.
 scikit-learn==1.6.0
+
+# Install XGBoost for the XGBoost classification model.
 xgboost==2.1.4
+
+# Install joblib for saving and loading the trained model.
 joblib==1.5.1
+
+# Install MLflow for experiment tracking and model management.
 mlflow==3.0.1
