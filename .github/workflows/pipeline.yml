@@ -1,33 +1,45 @@
 
+# Define the name displayed for the GitHub Actions workflow.
 name: Tourism Prediction MLOps Pipeline
 
+# Define when the workflow should run.
 on:
+  # Run the workflow whenever code is pushed to the main branch.
   push:
     branches:
       - main
 
+  # Allow the workflow to be started manually from GitHub Actions.
   workflow_dispatch:
 
+# Grant permission to write repository contents.
 permissions:
   contents: write
 
+# Define the jobs included in the MLOps pipeline.
 jobs:
 
   # ==================================================
   # JOB 1: REGISTER DATASET
   # ==================================================
 
+  # Define the dataset registration job.
   register-dataset:
 
+    # Display name of the job.
     name: Register Dataset
 
+    # Run the job on the latest Ubuntu environment.
     runs-on: ubuntu-latest
 
+    # Define the steps for dataset registration.
     steps:
 
+      # Download the repository contents into the GitHub runner.
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Check whether the tourism dataset exists.
       - name: Register Dataset
         run: |
           echo "Registering tourism dataset..."
@@ -35,6 +47,7 @@ jobs:
           echo "Dataset found successfully."
           echo "Dataset registered for the pipeline."
 
+      # Store the registered dataset as a workflow artifact.
       - name: Upload registered dataset
         uses: actions/upload-artifact@v4
         with:
@@ -46,42 +59,54 @@ jobs:
   # JOB 2: DATA PREPARATION
   # ==================================================
 
+  # Define the data preparation job.
   data-preparation:
 
+    # Display name of the job.
     name: Data Preparation
 
+    # Run this job only after dataset registration succeeds.
     needs: register-dataset
 
+    # Run the job on the latest Ubuntu environment.
     runs-on: ubuntu-latest
 
+    # Define the steps for data preparation.
     steps:
 
+      # Download the repository contents.
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Install the required Python version.
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      # Install all project dependencies from requirements.txt.
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
 
+      # Download the registered dataset from the previous job.
       - name: Download registered dataset
         uses: actions/download-artifact@v4
         with:
           name: registered-dataset
           path: data/
 
+      # Validate the downloaded dataset.
       - name: Validate dataset
         run: |
           python validate_data.py
 
+      # Clean and split the dataset into training and testing data.
       - name: Prepare data
         run: |
           python model_building/prepare_data.py
 
+      # Store the prepared datasets as workflow artifacts.
       - name: Upload prepared data
         uses: actions/upload-artifact@v4
         with:
@@ -93,48 +118,61 @@ jobs:
   # JOB 3: MODEL TRAINING
   # ==================================================
 
+  # Define the model training job.
   model-training:
 
+    # Display name of the job.
     name: Model Training
 
+    # Run this job only after data preparation succeeds.
     needs: data-preparation
 
+    # Run the job on the latest Ubuntu environment.
     runs-on: ubuntu-latest
 
+    # Define the steps for model training.
     steps:
 
+      # Download the repository contents.
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Install the required Python version.
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      # Install all project dependencies.
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
 
+      # Download the prepared datasets from the previous job.
       - name: Download prepared data
         uses: actions/download-artifact@v4
         with:
           name: prepared-data
           path: artifacts/
 
+      # Start the MLflow tracking server in the background.
       - name: Start MLflow tracking
         run: |
           nohup mlflow ui --host 0.0.0.0 --port 5000 > mlflow.log 2>&1 &
           sleep 5
 
+      # Train and tune the machine learning models.
       - name: Train models
         run: |
           python model_building/train.py
 
+      # Verify that the best trained model was created.
       - name: Check trained model
         run: |
           test -f deployment/best_model.joblib
           echo "Best model created successfully."
 
+      # Commit the newly trained model to the GitHub repository.
       - name: Commit trained model
         run: |
           git config user.name "github-actions[bot]"
