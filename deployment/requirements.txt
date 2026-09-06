@@ -1,6 +1,15 @@
 
+# Install the required pandas version for data handling.
 pandas==2.2.2
+
+# Install the required scikit-learn version for preprocessing and machine learning.
 scikit-learn==1.6.0
+
+# Install the required XGBoost version for the XGBoost model.
 xgboost==2.1.4
+
+# Install joblib for loading the saved machine learning model.
 joblib==1.5.1
+
+# Install Streamlit for running the web application.
 streamlit==1.43.2
